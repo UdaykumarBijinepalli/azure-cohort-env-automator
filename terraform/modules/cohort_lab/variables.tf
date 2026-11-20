@@ -1,4 +1,4 @@
-﻿variable "cohort_id" {
+variable "cohort_id" {
   description = "Unique identifier for the training cohort (e.g., cohort01)"
   type        = string
 }

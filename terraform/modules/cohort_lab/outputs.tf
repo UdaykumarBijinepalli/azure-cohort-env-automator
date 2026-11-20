@@ -1,4 +1,4 @@
-﻿output "resource_group_name" {
+output "resource_group_name" {
   description = "Provisioned cohort Resource Group name"
   value       = azurerm_resource_group.cohort.name
 }

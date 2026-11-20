@@ -1,4 +1,4 @@
-﻿variable "cohort_id" {
+variable "cohort_id" {
   type = string
 }
 

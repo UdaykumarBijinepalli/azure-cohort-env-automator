@@ -1,4 +1,4 @@
-﻿module "cohort01_lab" {
+module "cohort01_lab" {
   source = "../../modules/cohort_lab"
 
   cohort_id             = var.cohort_id
