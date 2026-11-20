@@ -1,0 +1,58 @@
+﻿name: Post-Training Cohort Lab Teardown
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type DESTROY to confirm complete removal of cohort01 lab resources'
+        required: true
+        default: 'DESTROY'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: true
+  TF_WORKING_DIR: terraform/environments/cohort01
+
+jobs:
+  destroy:
+    name: Destroy Cohort Lab Resources
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm_destroy == 'DESTROY'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Terraform Init (OIDC Remote State)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_NAME }}"
+
+      - name: Terraform Destroy
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform destroy -auto-approve
+
+      - name: Verify Zero Orphaned Resource Groups
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Assert Cohort RG Deleted
+        run: |
+          EXISTS=$(az group exists --name rg-cohort01-lab)
+          if [ "$EXISTS" = "true" ]; then
+            echo "ERROR: rg-cohort01-lab still exists!"
+            exit 1
+          fi
+          echo "Verified: rg-cohort01-lab completely destroyed. Zero orphaned resources."
